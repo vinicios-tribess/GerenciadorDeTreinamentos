@@ -1,37 +1,117 @@
 import sqlite3
+from teste import LeiaInt, LeiaStr1, LeiaStr2
 
 banco = sqlite3.connect('BancoDeDados.db')
 cursor = banco.cursor()
 
-n_pessoas = int(input("Digite o número de pessoas que participarão do evento: "))
+n_pessoas = LeiaInt("\033[1;36mDigite o número de pessoas que participarão do evento: \033[m")
 
-print("Digite o nome e sobrenome de cada pessoa que participará do evento: ")
+print("\033[1;32mDigite o nome e sobrenome de cada pessoa que participará do evento: \033[m")
 
 for i in range (1, n_pessoas + 1):
-    nome = str(input(f"Nome e sobrenome da {i}ª pessoa: "))
+    nome = LeiaStr1(f"\033[1;32mNome e sobrenome da {i}ª pessoa: \033[m")
     cursor.execute("CREATE TABLE IF NOT EXISTS pessoas (id_pessoa integer primary key, nome_pessoa text not null)")
     cursor.execute(f"INSERT INTO pessoas VALUES('{i}', '{nome}')")
     banco.commit()
 
-n_salas = int(input("Digite o número de salas disponíveis: "))
+n_salas = LeiaInt("\033[1;36mDigite o número de salas disponíveis: \033[m")
 
-print("Digite o nome das salas e em seguida suas respectivas lotações: ")
+di = (n_pessoas // n_salas)
+resto = (n_pessoas % n_salas)
 
-for i in range (1, n_salas + 1):
-    nome_sala = str(input(f"Nome da {i}ª sala: "))
-    lotacao = str(input(f"Lotação da sala {i}ª: "))
-    cursor.execute("CREATE TABLE IF NOT EXISTS salas (id_sala integer primary key, nome_sala text not null, lotacao_sala integer not null)")
-    cursor.execute(f"INSERT INTO salas VALUES('{i}', '{nome_sala}', {lotacao})")
-    banco.commit()
+c = True
+while True:
+    if c == True:
+        try:
+            while True:
 
-print("Digite o nome dos espaços de café e em seguida suas respectivas lotações: ")
+                if resto != 0:
+                    print(
+                        f"\033[0;33mAtenção! Para que {n_pessoas} pessoas caibam em {n_salas} salas, com no máximo 1 pessoa de diferença entre cada sala,\033[m \n"
+                        f"\033[0;33msão necessárias no mínimo {resto} sala(s) com lotação igual a {di + 1} e {n_salas - resto} sala(s) com lotação igual a {di}.\033[m"
+                    )
+                else:
+                    print(
+                        f"\033[0;33mAtenção! Para que {n_pessoas} pessoas caibam em {n_salas} salas, de maneira uniforme,\033[m \n"
+                        f"\033[0;33mé necessário que cada uma das {n_salas} salas tenha lotação mínima de {di} pessoas.\033[m"
+                    )
 
-for i in range (1, 3):
-    nome_espaco = str(input(f"Nome do {i}º espaço de café: "))
-    lotacao = str(input(f"Lotação do {i}º espaço de café: "))
-    cursor.execute("CREATE TABLE IF NOT EXISTS espacos_cafe (id_espaco integer primary key, nome_espaco text not null, lotacao_espaco integer not null)")
-    cursor.execute(f"INSERT INTO espacos_cafe VALUES('{i}', '{nome_espaco}', {lotacao})")
-    banco.commit()
+                print("\033[1;32mDigite o nome das salas e em seguida suas respectivas lotações: \033[m")
+
+                lista_lotacoes = []
+                for i in range (1, n_salas + 1):
+                    nome_sala = LeiaStr2(f"\033[1;32mNome da {i}ª sala: \033[m")
+                    lotacao = LeiaInt(f"\033[1;35mLotação da sala {i}ª: \033[m")
+                    lista_lotacoes.append(lotacao)
+                    cursor.execute("CREATE TABLE IF NOT EXISTS salas (id_sala integer not null, nome_sala text primary key, lotacao_sala integer not null)")
+                    cursor.execute(f"INSERT INTO salas VALUES('{i}', '{nome_sala}', {lotacao})")
+                    banco.commit()
+
+                lista_ordenada = sorted(lista_lotacoes)
+                menor_valor = lista_ordenada[0]
+
+                if menor_valor >= di and sum(lista_ordenada) >= n_pessoas:  
+                    c = False
+                    break
+                else:
+                    cursor.execute("DROP TABLE IF EXISTS salas")
+                    print("\033[0;31mOps! Algo deu errado no cadastro das salas. Verifique os dados e tente novamente.\033[m")
+
+        except sqlite3.IntegrityError:
+            print("\033[0;31mErro! Não podem haver salas com o mesmo nome. Tente Novamente.\033[m")
+            cursor.execute("DROP TABLE IF EXISTS salas")
+    else:
+        break
+
+print(
+    "\033[1;32mDigite o nome dos espaços de café e em seguida suas respectivas lotações: \033[m \n"
+    "\033[4;33mLembre-se de que a soma das lotações dos espaços de café deve ser maior ou igual ao número de pessoas\033[m"
+)
+
+resto = n_pessoas % 2
+
+c = True
+while True:
+    if c == True:
+        try:
+            while True:
+
+                if resto == 0:
+                    print(
+                        f"\033[0;33mAtenção! Para que {n_pessoas} pessoas caibam em 2 espaços de café, de maneira uniforme,\033[m \n"
+                        f"\033[0;33mambos os espaços devem ter lotação mínima igual a {n_pessoas // 2}.\033[m"
+                    )
+                else:
+                    print(
+                        f"\033[0;33mAtenção! Para que {n_pessoas} pessoas caibam em 2 espaços de café, com no máximo 1 pessoa de diferença entre cada espaço,\033[m \n"
+                        f"\033[0;33mé necessário que um espaço tenha lotação mínima de {(n_pessoas // 2) + 1} e outro tenha lotação mínima de {(n_pessoas // 2)}.\033[m"
+                    )
+
+                lista_lotacoes = []
+                for i in range (1, 3):
+                    nome_espaco = LeiaStr2(f"\033[1;32mNome do {i}º espaço de café: \033[m")
+                    lotacao = LeiaInt(f"\033[1;35mLotação do {i}º espaço de café: \033[m")
+                    lista_lotacoes.append(lotacao)
+                    cursor.execute("CREATE TABLE IF NOT EXISTS espacos_cafe (id_espaco integer not null, nome_espaco text primary key, lotacao_espaco integer not null)")
+                    cursor.execute(f"INSERT INTO espacos_cafe VALUES('{i}', '{nome_espaco}', {lotacao})")
+                    banco.commit()
+
+                lista_ordenada = sorted(lista_lotacoes)
+                menor_valor = lista_ordenada[0]
+
+                if sum(lista_lotacoes) >= n_pessoas and menor_valor >= (n_pessoas // 2):
+                    c = False
+                    break
+                else:
+                    cursor.execute("DROP TABLE IF EXISTS espacos_cafe")
+                    print("\033[0;31mOps! Algo deu errado no cadastro dos espaços de café. Verifique os dados e tente novamente.\033[m")
+                    print("\033[0;33mLembre-se de que a soma das lotações dos espaços de café deve ser maior ou igual ao número de pessoas.\033[m")
+
+        except sqlite3.IntegrityError:
+            print("\033[0;31mErro! Não podem haver espaços de café com o mesmo nome. Tente Novamente.\033[m")
+            cursor.execute("DROP TABLE IF EXISTS espacos_cafe")
+    else:
+        break
 
 # Essa parte separa as pessoas em salas para a etapa 1:
 
@@ -143,10 +223,15 @@ cursor.execute("CREATE TABLE IF NOT EXISTS etapa2_espacos_cafe (id_pessoa intege
 cursor.executemany("INSERT INTO etapa2_espacos_cafe (id_pessoa, nome_pessoa, id_espaco) VALUES (?, ?, ?)", espaco_cafe2)
 banco.commit()
 
+banco.close()
+
+print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+
 print(
     "Tudo pronto! Digite a opção do que você deseja fazer agora:\n"
     "1 - Consultar pessoa pelo nome.\n"
-    "2 - Consultar sala ou espaço de café pelo nome.\n"
+    "2 - Consultar sala pelo nome.\n"
+    "3 - Consultar espaço de café pelo nome\n"
 )
 
 escolha = int(input("Sua opção: "))
@@ -161,15 +246,7 @@ if escolha == 1:
         id_pessoa = i[0]
         nome_pessoa = i[1]
         nome_sala = i[2]
-        print(f"{nome_pessoa}, de ID nº {id_pessoa}, ficará na sala {nome_sala} durante a etapa 1 do treinamento.")
-
-    cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_sala FROM salas INNER JOIN etapa2_salas ON salas.id_sala = etapa2_salas.id_sala WHERE nome_pessoa = '{nome}'")
-    dados = cursor.fetchall()
-    for i in dados:
-        id_pessoa = i[0]
-        nome_pessoa = i[1]
-        nome_sala = i[2]
-        print(f"{nome_pessoa}, de ID nº {id_pessoa}, ficará na sala {nome_sala} durante a etapa 2 do treinamento.")
+        print(f"{nome_pessoa}, ID {id_pessoa}, ficará na sala {nome_sala} durante a etapa 1 do treinamento.")
 
     cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_espaco FROM espacos_cafe INNER JOIN etapa1_espacos_cafe ON espacos_cafe.id_espaco = etapa1_espacos_cafe.id_espaco WHERE nome_pessoa = '{nome}'")
     dados = cursor.fetchall()
@@ -177,7 +254,15 @@ if escolha == 1:
         id_pessoa = i[0]
         nome_pessoa = i[1]
         nome_espaco = i[2]
-        print(f"{nome_pessoa}, de ID nº {id_pessoa}, ficará no espaço de café {nome_espaco} durante a etapa 1 do treinamento.")
+        print(f"{nome_pessoa}, ID {id_pessoa}, ficará no espaço de café {nome_espaco} durante a etapa 1 do treinamento.")
+
+    cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_sala FROM salas INNER JOIN etapa2_salas ON salas.id_sala = etapa2_salas.id_sala WHERE nome_pessoa = '{nome}'")
+    dados = cursor.fetchall()
+    for i in dados:
+        id_pessoa = i[0]
+        nome_pessoa = i[1]
+        nome_sala = i[2]
+        print(f"{nome_pessoa}, ID {id_pessoa}, ficará na sala {nome_sala} durante a etapa 2 do treinamento.")
 
     cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_espaco FROM espacos_cafe INNER JOIN etapa2_espacos_cafe ON espacos_cafe.id_espaco = etapa2_espacos_cafe.id_espaco WHERE nome_pessoa = '{nome}'")
     dados = cursor.fetchall()
@@ -185,10 +270,48 @@ if escolha == 1:
         id_pessoa = i[0]
         nome_pessoa = i[1]
         nome_espaco = i[2]
-        print(f"{nome_pessoa}, de ID nº {id_pessoa}, ficará no espaço de café {nome_espaco} durante a etapa 1 do treinamento.")
+        print(f"{nome_pessoa}, ID {id_pessoa}, ficará no espaço de café {nome_espaco} durante a etapa 1 do treinamento.")
 
-elif escolha == 2:
-    print("Ainda falta fazer.")
+if escolha == 2:
+    
+    sala = str(input("Digite o nome da sala: "))
+
+    cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_sala FROM salas INNER JOIN etapa1_salas ON salas.id_sala = etapa1_salas.id_sala WHERE nome_sala = '{sala}'")
+    dados = cursor.fetchall()
+    print(f"Na sala {sala}, na etapa 1, ficarão as seguintes pessoas: ")
+    for i in dados:
+        id_pessoa = i[0]
+        nome_pessoa = i[1]
+        print(f"{nome_pessoa}; ID: {id_pessoa}")
+
+    cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_sala FROM salas INNER JOIN etapa2_salas ON salas.id_sala = etapa2_salas.id_sala WHERE nome_sala = '{sala}'")
+    dados = cursor.fetchall()
+    print(f"Na sala {sala}, na etapa 2, ficarão as seguintes pessoas: ")
+    for i in dados:
+        id_pessoa = i[0]
+        nome_pessoa = i[1]
+        print(f"{nome_pessoa}; ID: {id_pessoa}")
+
+if escolha == 3:
+    
+    espaco = str(input("Digite o nome do espaco de café: "))
+
+    cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_espaco FROM espacos_cafe INNER JOIN etapa1_espacos_cafe ON espacos_cafe.id_espaco = etapa1_espacos_cafe.id_espaco WHERE nome_espaco = '{espaco}'")
+    dados = cursor.fetchall()
+    print(f"No espaço de café {espaco}, na etapa 1, ficarão as seguintes pessoas: ")
+    for i in dados:
+        id_pessoa = i[0]
+        nome_pessoa = i[1]
+        print(f"{nome_pessoa}; ID: {id_pessoa}")
+
+    cursor.execute(f"SELECT id_pessoa, nome_pessoa, nome_espaco FROM espacos_cafe INNER JOIN etapa2_espacos_cafe ON espacos_cafe.id_espaco = etapa2_espacos_cafe.id_espaco WHERE nome_espaco = '{espaco}'")
+    dados = cursor.fetchall()
+    print(f"No espaço de café {espaco}, na etapa 2, ficarão as seguintes pessoas: ")
+    for i in dados:
+        id_pessoa = i[0]
+        nome_pessoa = i[1]
+        print(f"{nome_pessoa}; ID: {id_pessoa}")
+
 else:
     print("Essa não é uma opção válida. Tente novamente.")
 
